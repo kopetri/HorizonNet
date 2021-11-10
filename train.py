@@ -2,7 +2,7 @@ import os
 import argparse
 import numpy as np
 from tqdm import trange
-from tensorboardX import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 
 import torch
 import torch.nn as nn
