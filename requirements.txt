@@ -1,0 +1,7 @@
+scipy
+Pillow
+tqdm
+opencv-python
+open3d
+shapely
+pytorch_lightning==1.4.0
