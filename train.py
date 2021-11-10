@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from model import ENCODER_RESNET, ENCODER_DENSENET
 from dataset import PanoCorBonDataset
 from module import HorizonModel
+import numpy as np
 
 
 if __name__ == '__main__':
@@ -88,7 +89,7 @@ if __name__ == '__main__':
         min_epochs=args.min_epochs,
         max_epochs=args.max_epochs,
         logger=pl.loggers.TensorBoardLogger("result", name="HorizonNet"),
-        callbacks=callbacks
+        callbacks=[]
     )
 
     yaml = args.__dict__
@@ -102,23 +103,22 @@ if __name__ == '__main__':
     val_dataset   = PanoCorBonDataset(root_dir=args.valid_root_dir, return_cor=True, flip=False, rotate=False, gamma=False, stretch=False)
     
 
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=args.batch_size,
-        shuffle=True,
-        num_workers=args.worker
-    )
+    train_loader = DataLoader(train_dataset, args.batch_size_train,
+                              shuffle=True, drop_last=True,
+                              num_workers=args.worker,
+                              pin_memory=True,
+                              worker_init_fn=lambda x: np.random.seed())
 
     val_loader = DataLoader(
         val_dataset,
-        batch_size=1,
+        batch_size=args.batch_size_valid,
         shuffle=False,
         num_workers=args.worker
     )
 
     # Init variable
     args.warmup_iters = args.warmup_epochs * len(train_loader)
-    args.max_iters = args.epochs * len(train_loader)
+    args.max_iters = args.max_epochs * len(train_loader)
     args.running_lr = args.warmup_lr if args.warmup_epochs > 0 else args.lr
     args.cur_iter = 0
     args.best_valid_score = 0

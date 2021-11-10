@@ -125,13 +125,12 @@ class PanoCorBonDataset(data.Dataset):
         y_cor = torch.FloatTensor(y_cor.copy())
 
         # Check whether additional output are requested
-        out_lst = [x, bon, y_cor]
+        data = {'x': x, 'bon': bon, 'y_cor': y_cor, 'cor': None, 'img_path': None}
         if self.return_cor:
-            out_lst.append(cor)
+            data['cor': cor]
         if self.return_path:
-            out_lst.append(img_path)
-
-        return out_lst
+            data['img_path'] = img_path
+        return data
 
 
 def cor_2_1d(cor, H, W):

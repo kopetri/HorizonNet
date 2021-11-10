@@ -48,7 +48,7 @@ class HorizonModel(pl.LightningModule):
                     m.eval()
         
     def training_step(self, batch, batch_idx):
-        x, y_bon, y_cor = batch
+        x, y_bon, y_cor = batch['x'], batch['bon'], batch['cor']
 
         losses = self(x, y_bon, y_cor)
 
@@ -56,7 +56,7 @@ class HorizonModel(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        x, y_bon, y_cor, gt_cor_id = batch
+        x, y_bon, y_cor, gt_cor_id = batch['x'], batch['bon'], batch['cor'], batch['img_path']
         x, y_bon, y_cor = x[None], y_bon[None], y_cor[None]
 
         losses = self(x, y_bon, y_cor)
