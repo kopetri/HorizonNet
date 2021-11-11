@@ -70,7 +70,6 @@ class HorizonModel(pl.LightningModule):
             dt_cor_id[:, 0] *= 1024
             dt_cor_id[:, 1] *= 512
         except Exception as e:
-            print(e)
             dt_cor_id = np.array([
                 [k//2 * 1024, 256 - ((k%2)*2 - 1) * 120]
                 for k in range(8)
