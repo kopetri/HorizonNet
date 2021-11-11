@@ -67,13 +67,13 @@ if __name__ == '__main__':
 
     callbacks += [pl.callbacks.lr_monitor.LearningRateMonitor()]
 
-    callbacks += [pl.callbacks.ModelCheckpoint(
-        verbose=True,
-        save_top_k=1,
-        filename='{epoch}-{valid_acc}',
-        monitor='valid_acc',
-        mode='max'
-    )]
+    #callbacks += [pl.callbacks.ModelCheckpoint(
+    #    verbose=True,
+    #    save_top_k=1,
+    #    filename='{epoch}-{valid_acc}',
+    #    monitor='valid_acc',
+    #    mode='max'
+    #)]
 
     use_gpu = not args.gpus == 0
 
@@ -88,7 +88,7 @@ if __name__ == '__main__':
         min_epochs=args.min_epochs,
         max_epochs=args.max_epochs,
         logger=pl.loggers.TensorBoardLogger("result", name="HorizonNet"),
-        callbacks=[]
+        callbacks=callbacks
     )
 
     yaml = args.__dict__
@@ -119,9 +119,6 @@ if __name__ == '__main__':
     args.warmup_iters = args.warmup_epochs * len(train_loader)
     args.max_iters = args.max_epochs * len(train_loader)
     args.running_lr = args.warmup_lr if args.warmup_epochs > 0 else args.lr
-    args.cur_iter = 0
-    args.best_valid_score = 0
-
     
     model = HorizonModel(args)
 

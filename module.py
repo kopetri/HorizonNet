@@ -81,6 +81,17 @@ class HorizonModel(pl.LightningModule):
         losses['delta_1'] = torch.FloatTensor([true_eval['overall']['delta_1']])
 
     def configure_optimizers(self):
+        def adjust_learning_rate(epoch):
+            cur_iter = self.global_step
+            if cur_iter < self.opt.warmup_iters:
+                frac = cur_iter / self.opt.warmup_iters
+                step = self.opt.lr - self.opt.warmup_lr
+                running_lr = self.opt.warmup_lr + step * frac
+            else:
+                frac = (float(cur_iter) - self.opt.warmup_iters) / (self.opt.max_iters - self.opt.warmup_iters)
+                scale_running_lr = max((1. - frac), 0.) ** self.opt.lr_pow
+                running_lr = self.opt.lr * scale_running_lr
+            return running_lr
         # Create optimizer
         if self.opt.optim == 'SGD':
             optimizer = torch.optim.SGD(
@@ -93,4 +104,5 @@ class HorizonModel(pl.LightningModule):
         else:
             raise NotImplementedError()
 
-        return optimizer
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, adjust_learning_rate)
+        return [optimizer], [scheduler]

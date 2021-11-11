@@ -55,12 +55,11 @@ def layout_2_depth(cor_id, h, w, return_mask=False):
 
 
 def test_general(dt_cor_id, gt_cor_id, w, h, losses):
-
     if isinstance(dt_cor_id, torch.Tensor):
         dt_cor_id = dt_cor_id.detach().cpu().numpy()
 
     if isinstance(gt_cor_id, torch.Tensor):
-        gt_cor_id = gt_cor_id.detach().cpu().numpy()
+        gt_cor_id = gt_cor_id.detach().cpu().squeeze(0).numpy()
 
     dt_floor_coor = dt_cor_id[1::2]
     dt_ceil_coor = dt_cor_id[0::2]
