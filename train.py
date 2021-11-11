@@ -67,13 +67,13 @@ if __name__ == '__main__':
 
     callbacks += [pl.callbacks.lr_monitor.LearningRateMonitor()]
 
-    #callbacks += [pl.callbacks.ModelCheckpoint(
-    #    verbose=True,
-    #    save_top_k=1,
-    #    filename='{epoch}-{valid_acc}',
-    #    monitor='valid_acc',
-    #    mode='max'
-    #)]
+    callbacks += [pl.callbacks.ModelCheckpoint(
+        verbose=True,
+        save_top_k=1,
+        filename='{epoch}-{valid_3DIoU}',
+        monitor='valid_3DIoU',
+        mode='max'
+    )]
 
     use_gpu = not args.gpus == 0
 

@@ -88,6 +88,8 @@ class HorizonModel(pl.LightningModule):
         self.log("valid_rmse",    losses['rmse'], prog_bar=True)
         self.log("valid_delta_1", losses['delta_1'], prog_bar=True)
 
+        return {'valid_2DIoU': losses['2DIoU'], 'valid_3DIoU': losses['3DIoU'], 'valid_rmse': losses['rmse'], 'valid_delta_1': losses['delta_1']}
+
     def configure_optimizers(self):
         def adjust_learning_rate(epoch):
             cur_iter = self.global_step
