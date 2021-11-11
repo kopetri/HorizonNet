@@ -70,6 +70,7 @@ def inference(net, x, device, flip=False, rotate=[], visualize=False,
     flip  : fliping testing augmentation
     rotate: horizontal rotation testing augmentation
     '''
+    x = x.detach().cpu()
 
     H, W = tuple(x.shape[2:])
 

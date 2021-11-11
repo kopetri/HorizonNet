@@ -56,9 +56,8 @@ class HorizonModel(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
-        x, y_bon, y_cor, gt_cor_id = batch
-        x, y_bon, y_cor = x[None], y_bon[None], y_cor[None]
-
+        x, y_bon, y_cor, gt_cor_id = batch        
+        
         losses = self(x, y_bon, y_cor)
 
         # True eval result instead of training objective
@@ -70,7 +69,8 @@ class HorizonModel(pl.LightningModule):
             dt_cor_id = inference(self.net, x, x.device, force_raw=True)[0]
             dt_cor_id[:, 0] *= 1024
             dt_cor_id[:, 1] *= 512
-        except:
+        except Exception as e:
+            print(e)
             dt_cor_id = np.array([
                 [k//2 * 1024, 256 - ((k%2)*2 - 1) * 120]
                 for k in range(8)

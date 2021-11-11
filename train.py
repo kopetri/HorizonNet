@@ -39,7 +39,7 @@ if __name__ == '__main__':
     # optimization related arguments
     parser.add_argument('--freeze_earlier_blocks', default=-1, type=int)
     parser.add_argument('--batch_size_train', default=4, type=int, help='training mini-batch size')
-    parser.add_argument('--batch_size_valid', default=2, type=int, help='validation mini-batch size')
+    parser.add_argument('--batch_size_valid', default=1, type=int, help='validation mini-batch size')
     parser.add_argument('--optim', default='Adam', help='optimizer to use. only support SGD and Adam')
     parser.add_argument('--lr', default=1e-4, type=float, help='learning rate')
     parser.add_argument('--lr_pow', default=0.9, type=float, help='power in poly to drop LR')
