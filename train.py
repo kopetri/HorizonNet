@@ -126,8 +126,6 @@ if __name__ == '__main__':
     args.warmup_iters = args.warmup_epochs * len(train_loader)
     args.max_iters = args.max_epochs * len(train_loader)
     args.running_lr = args.warmup_lr if args.warmup_epochs > 0 else args.lr
-    args.cur_iter = 0
-    args.best_valid_score = 0
 
     if args.ckpt:
         ckpt = parse_ckpt(args.ckpt)
