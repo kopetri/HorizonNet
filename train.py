@@ -8,7 +8,10 @@ from model import ENCODER_RESNET, ENCODER_DENSENET
 from dataset import PanoCorBonDataset
 from module import HorizonModel
 import numpy as np
+from pathlib import Path
 
+def parse_ckpt(path):    
+    return [p for p in Path(path).glob("**/*") if p.suffix == ".ckpt"][0].as_posix()
 
 if __name__ == '__main__':
 
@@ -47,6 +50,9 @@ if __name__ == '__main__':
     parser.add_argument('--beta1', default=0.9, type=float, help='momentum for sgd, beta1 for adam')
     parser.add_argument('--weight_decay', default=0, type=float, help='factor for L2 regularization')
     parser.add_argument('--bn_momentum', type=float)
+
+    # testing
+    parser.add_argument('--ckpt', default=None, type=str, help="Load checkpoint from version folder")
 
     args = parser.parse_args()
 
@@ -119,8 +125,14 @@ if __name__ == '__main__':
     args.warmup_iters = args.warmup_epochs * len(train_loader)
     args.max_iters = args.max_epochs * len(train_loader)
     args.running_lr = args.warmup_lr if args.warmup_epochs > 0 else args.lr
-    
-    model = HorizonModel(args)
+
+    if args.ckpt:
+        ckpt = parse_ckpt(args.ckpt)
+        print("Loading ckpt: ", ckpt)
+        model = HorizonModel.load_from_checkpoint(checkpoint_path=ckpt)
+        model.store_ckpt(ckpt)
+    else:
+        model = HorizonModel(args)
 
 
     if args.find_learning_rate:
