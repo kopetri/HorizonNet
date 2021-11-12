@@ -5,7 +5,8 @@ from model import HorizonNet
 from inference import inference
 from eval_general import test_general
 import numpy as np
-
+from misc.utils import save_model
+from pathlib import Path
 
 class HorizonModel(pl.LightningModule):
     def __init__(self, opt):
@@ -28,6 +29,10 @@ class HorizonModel(pl.LightningModule):
             for m in self.net.modules():
                 if isinstance(m, (torch.nn.BatchNorm1d, torch.nn.BatchNorm2d)):
                     m.momentum = self.opt.bn_momentum
+
+    def store_ckpt(self, path):
+        path = Path(path).parent/"{}.pth".format(Path(path).stem)
+        save_model(self.net, path.as_posix(), self.opt)
 
     def forward(self, x, y_bon, y_cor):
         losses = {}
