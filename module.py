@@ -58,12 +58,14 @@ class HorizonModel(pl.LightningModule):
         losses = self(x, y_bon, y_cor)
 
         loss = losses['total']
+        self.log("train_bon_loss", losses['bon'])
+        self.log("train_cor_loss", losses['cor'])
+        self.log("train_loss", losses['total'])
         return loss
 
     def validation_step(self, batch, batch_idx):
-        x, y_bon, y_cor, gt_cor_id = batch
-        x, y_bon, y_cor = x[None], y_bon[None], y_cor[None]
-
+        x, y_bon, y_cor, gt_cor_id = batch        
+        
         losses = self(x, y_bon, y_cor)
 
         # True eval result instead of training objective
@@ -75,7 +77,7 @@ class HorizonModel(pl.LightningModule):
             dt_cor_id = inference(self.net, x, x.device, force_raw=True)[0]
             dt_cor_id[:, 0] *= 1024
             dt_cor_id[:, 1] *= 512
-        except:
+        except Exception as e:
             dt_cor_id = np.array([
                 [k//2 * 1024, 256 - ((k%2)*2 - 1) * 120]
                 for k in range(8)
@@ -86,7 +88,25 @@ class HorizonModel(pl.LightningModule):
         losses['rmse'] = torch.FloatTensor([true_eval['overall']['rmse']])
         losses['delta_1'] = torch.FloatTensor([true_eval['overall']['delta_1']])
 
+        self.log("valid_2DIoU",   losses['2DIoU'], prog_bar=True)
+        self.log("valid_3DIoU",   losses['3DIoU'], prog_bar=True)
+        self.log("valid_rmse",    losses['rmse'], prog_bar=True)
+        self.log("valid_delta_1", losses['delta_1'], prog_bar=True)
+
+        return {'valid_2DIoU': losses['2DIoU'], 'valid_3DIoU': losses['3DIoU'], 'valid_rmse': losses['rmse'], 'valid_delta_1': losses['delta_1']}
+
     def configure_optimizers(self):
+        def adjust_learning_rate(epoch):
+            cur_iter = self.global_step
+            if cur_iter < self.opt.warmup_iters:
+                frac = cur_iter / self.opt.warmup_iters
+                step = self.opt.lr - self.opt.warmup_lr
+                running_lr = self.opt.warmup_lr + step * frac
+            else:
+                frac = (float(cur_iter) - self.opt.warmup_iters) / (self.opt.max_iters - self.opt.warmup_iters)
+                scale_running_lr = max((1. - frac), 0.) ** self.opt.lr_pow
+                running_lr = self.opt.lr * scale_running_lr
+            return running_lr
         # Create optimizer
         if self.opt.optim == 'SGD':
             optimizer = torch.optim.SGD(
@@ -99,4 +119,5 @@ class HorizonModel(pl.LightningModule):
         else:
             raise NotImplementedError()
 
-        return optimizer
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, adjust_learning_rate, verbose=True)
+        return [optimizer], [scheduler]

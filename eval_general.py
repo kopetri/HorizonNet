@@ -1,8 +1,9 @@
 import os
 import json
-import glob
+import torch
 import argparse
 import numpy as np
+from numpy.lib.arraysetops import isin
 from tqdm import tqdm
 from shapely.geometry import Polygon
 
@@ -54,12 +55,19 @@ def layout_2_depth(cor_id, h, w, return_mask=False):
 
 
 def test_general(dt_cor_id, gt_cor_id, w, h, losses):
+    if isinstance(dt_cor_id, torch.Tensor):
+        dt_cor_id = dt_cor_id.detach().cpu().numpy()
+
+    if isinstance(gt_cor_id, torch.Tensor):
+        gt_cor_id = gt_cor_id.detach().cpu().squeeze(0).numpy()
+
     dt_floor_coor = dt_cor_id[1::2]
     dt_ceil_coor = dt_cor_id[0::2]
     gt_floor_coor = gt_cor_id[1::2]
     gt_ceil_coor = gt_cor_id[0::2]
-    assert (dt_floor_coor[:, 0] != dt_ceil_coor[:, 0]).sum() == 0
-    assert (gt_floor_coor[:, 0] != gt_ceil_coor[:, 0]).sum() == 0
+
+    assert (dt_floor_coor[:, 0] != dt_ceil_coor[:, 0]).astype(float).sum() == 0
+    assert (gt_floor_coor[:, 0] != gt_ceil_coor[:, 0]).astype(float).sum() == 0
 
     # Eval 3d IoU and height error(in meter)
     N = len(dt_floor_coor)

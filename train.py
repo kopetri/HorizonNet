@@ -41,8 +41,7 @@ if __name__ == '__main__':
     parser.add_argument('--no_pano_stretch', action='store_true', help='disable pano stretch')
     # optimization related arguments
     parser.add_argument('--freeze_earlier_blocks', default=-1, type=int)
-    parser.add_argument('--batch_size_train', default=4, type=int, help='training mini-batch size')
-    parser.add_argument('--batch_size_valid', default=2, type=int, help='validation mini-batch size')
+    parser.add_argument('--batch_size', default=4, type=int, help='training mini-batch size')
     parser.add_argument('--optim', default='Adam', help='optimizer to use. only support SGD and Adam')
     parser.add_argument('--lr', default=1e-4, type=float, help='learning rate')
     parser.add_argument('--lr_pow', default=0.9, type=float, help='power in poly to drop LR')
@@ -77,8 +76,8 @@ if __name__ == '__main__':
     callbacks += [pl.callbacks.ModelCheckpoint(
         verbose=True,
         save_top_k=1,
-        filename='{epoch}-{valid_acc}',
-        monitor='valid_acc',
+        filename='{epoch}-{valid_3DIoU}',
+        monitor='valid_3DIoU',
         mode='max'
     )]
 
@@ -95,7 +94,7 @@ if __name__ == '__main__':
         min_epochs=args.min_epochs,
         max_epochs=args.max_epochs,
         logger=pl.loggers.TensorBoardLogger("result", name="HorizonNet"),
-        callbacks=[]
+        callbacks=callbacks
     )
 
     yaml = args.__dict__
@@ -109,7 +108,7 @@ if __name__ == '__main__':
     val_dataset   = PanoCorBonDataset(root_dir=args.valid_root_dir, return_cor=True, flip=False, rotate=False, gamma=False, stretch=False)
     
 
-    train_loader = DataLoader(train_dataset, args.batch_size_train,
+    train_loader = DataLoader(train_dataset, args.batch_size,
                               shuffle=True, drop_last=True,
                               num_workers=args.worker,
                               pin_memory=True,
@@ -117,7 +116,7 @@ if __name__ == '__main__':
 
     val_loader = DataLoader(
         val_dataset,
-        batch_size=args.batch_size_valid,
+        batch_size=1,
         shuffle=False,
         num_workers=args.worker
     )
