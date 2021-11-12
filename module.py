@@ -96,17 +96,18 @@ class HorizonModel(pl.LightningModule):
         return {'valid_2DIoU': losses['2DIoU'], 'valid_3DIoU': losses['3DIoU'], 'valid_rmse': losses['rmse'], 'valid_delta_1': losses['delta_1']}
 
     def configure_optimizers(self):
-        def adjust_learning_rate(epoch):
-            cur_iter = self.global_step
+        def adjust_learning_rate(step):
+            cur_iter = step - 1
             if cur_iter < self.opt.warmup_iters:
                 frac = cur_iter / self.opt.warmup_iters
-                step = self.opt.lr - self.opt.warmup_lr
-                running_lr = self.opt.warmup_lr + step * frac
+                #step = self.opt.lr - self.opt.warmup_lr
+                #running_lr = self.opt.warmup_lr + step * frac
+                return frac - (1/self.opt.lr) * self.opt.warmup_lr * (frac + 1)
             else:
                 frac = (float(cur_iter) - self.opt.warmup_iters) / (self.opt.max_iters - self.opt.warmup_iters)
                 scale_running_lr = max((1. - frac), 0.) ** self.opt.lr_pow
-                running_lr = self.opt.lr * scale_running_lr
-            return running_lr
+                #running_lr = self.opt.lr * scale_running_lr
+                return scale_running_lr
         # Create optimizer
         if self.opt.optim == 'SGD':
             optimizer = torch.optim.SGD(
@@ -120,4 +121,10 @@ class HorizonModel(pl.LightningModule):
             raise NotImplementedError()
 
         scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, adjust_learning_rate, verbose=True)
-        return [optimizer], [scheduler]
+        return {
+            'optimizer': optimizer,
+            'lr_scheduler': {
+                'scheduler': scheduler,
+                'interval': 'step'
+            }
+        }
