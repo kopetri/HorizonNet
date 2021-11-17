@@ -50,6 +50,7 @@ if __name__ == '__main__':
     parser.add_argument('--beta1', default=0.9, type=float, help='momentum for sgd, beta1 for adam')
     parser.add_argument('--weight_decay', default=0, type=float, help='factor for L2 regularization')
     parser.add_argument('--bn_momentum', type=float)
+    parser.add_argument('--name', default='HorizonNet', type=str)
 
     # testing
     parser.add_argument('--ckpt', default=None, type=str, help="Load checkpoint from version folder")
@@ -94,7 +95,7 @@ if __name__ == '__main__':
         amp_level='O2' if use_gpu else None,
         min_epochs=args.min_epochs,
         max_epochs=args.max_epochs,
-        logger=pl.loggers.TensorBoardLogger("result", name="HorizonNet"),
+        logger=pl.loggers.TensorBoardLogger("result", name=args.name),
         callbacks=callbacks
     )
 
