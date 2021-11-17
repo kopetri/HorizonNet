@@ -96,8 +96,7 @@ class HorizonModel(pl.LightningModule):
         return {'valid_2DIoU': losses['2DIoU'], 'valid_3DIoU': losses['3DIoU'], 'valid_rmse': losses['rmse'], 'valid_delta_1': losses['delta_1']}
 
     def configure_optimizers(self):
-        def adjust_learning_rate(step):
-            cur_iter = step - 1
+        def adjust_learning_rate(cur_iter):
             if cur_iter < self.opt.warmup_iters:
                 frac = cur_iter / self.opt.warmup_iters
                 #step = self.opt.lr - self.opt.warmup_lr
@@ -120,7 +119,7 @@ class HorizonModel(pl.LightningModule):
         else:
             raise NotImplementedError()
 
-        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, adjust_learning_rate, verbose=True)
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, adjust_learning_rate)
         return {
             'optimizer': optimizer,
             'lr_scheduler': {

@@ -77,7 +77,7 @@ def test_general(dt_cor_id, gt_cor_id, w, h, losses):
     dt_poly = Polygon(dt_floor_xy)
     gt_poly = Polygon(gt_floor_xy)
     if not gt_poly.is_valid:
-        print('Skip ground truth invalid (%s)' % gt_path)
+        print('Skip ground truth invalid (%s)' % gt_floor_xy)
         return
 
     # 2D IoU
