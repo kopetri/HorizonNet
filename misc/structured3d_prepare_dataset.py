@@ -3,6 +3,8 @@ import argparse
 from zipfile import ZipFile
 from tqdm import tqdm
 import imageio
+from pathlib import Path
+import shutil
 
 '''
 Assume datas is extracted by `misc/structured3d_extract_zip.py`.
@@ -49,8 +51,20 @@ def prepare_dataset(scene_ids, out_dir):
             target_cor_path = os.path.join(root_cor, '%s_%s.txt' % (scene_id, room_id))
             assert os.path.isfile(source_img_path)
             assert os.path.isfile(source_cor_path)
-            os.symlink(source_img_path, target_img_path)
-            os.symlink(source_cor_path, target_cor_path)
+            source_img_path = Path(source_img_path)
+            source_cor_path = Path(source_cor_path)
+            target_img_path = Path(target_img_path)
+            target_cor_path = Path(target_cor_path)
+            #os.symlink(source_img_path, target_img_path)
+            #os.symlink(source_cor_path, target_cor_path)
+            target_img_path.parent.mkdir(parents=True, exist_ok=True)
+            target_cor_path.parent.mkdir(parents=True, exist_ok=True)
+            source_img_path = source_img_path.as_posix()
+            source_cor_path = source_cor_path.as_posix()
+            target_img_path = target_img_path.as_posix()
+            target_cor_path = target_cor_path.as_posix()
+            shutil.copy2(source_img_path, target_img_path)
+            shutil.copy2(source_cor_path, target_cor_path)
 
 prepare_dataset(TRAIN_SCENE, args.out_train_root)
 prepare_dataset(VALID_SCENE, args.out_valid_root)
