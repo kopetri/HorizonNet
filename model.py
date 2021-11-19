@@ -111,32 +111,39 @@ Decoder
 '''
 class ConvCompressH(nn.Module):
     ''' Reduce feature height by factor of two '''
-    def __init__(self, in_c, out_c, ks=3):
+    def __init__(self, in_c, out_c, ring_conv, ks=3):
         super(ConvCompressH, self).__init__()
+        self.ring_conv = ring_conv
         assert ks % 2 == 1
-        self.layers = nn.Sequential(
-            nn.Conv2d(in_c, out_c, kernel_size=ks, stride=(2, 1), padding=ks//2),
-            nn.BatchNorm2d(out_c),
-            nn.ReLU(inplace=True),
-        )
+        if ring_conv:
+            self.conv = nn.Conv2d(in_c, out_c, kernel_size=ks, stride=(2, 1), padding=(ks//2, 0))
+        else:
+            self.conv = nn.Conv2d(in_c, out_c, kernel_size=ks, stride=(2, 1), padding=ks//2)
+        self.bn   = nn.BatchNorm2d(out_c)
+        self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
-        return self.layers(x)
+        if self.ring_conv:
+            #add circular padding
+            x = F.pad(x,(1,1,0,0), mode = 'circular')
+        x = self.conv(x)
+        x = self.bn(x)
+        x = self.relu(x)
+        return x
 
 
 class GlobalHeightConv(nn.Module):
-    def __init__(self, in_c, out_c):
+    def __init__(self, in_c, out_c, use_ring_conv):
         super(GlobalHeightConv, self).__init__()
         self.layer = nn.Sequential(
-            ConvCompressH(in_c, in_c//2),
-            ConvCompressH(in_c//2, in_c//2),
-            ConvCompressH(in_c//2, in_c//4),
-            ConvCompressH(in_c//4, out_c),
+            ConvCompressH(in_c,    in_c//2, use_ring_conv),
+            ConvCompressH(in_c//2, in_c//2, use_ring_conv),
+            ConvCompressH(in_c//2, in_c//4, use_ring_conv),
+            ConvCompressH(in_c//4, out_c,   use_ring_conv),
         )
 
     def forward(self, x, out_w):
         x = self.layer(x)
-
         assert out_w % x.shape[3] == 0
         factor = out_w // x.shape[3]
         x = torch.cat([x[..., -1:], x, x[..., :1]], 3)
@@ -146,16 +153,16 @@ class GlobalHeightConv(nn.Module):
 
 
 class GlobalHeightStage(nn.Module):
-    def __init__(self, c1, c2, c3, c4, out_scale=8):
+    def __init__(self, c1, c2, c3, c4, use_ring_conv, out_scale=8):
         ''' Process 4 blocks from encoder to single multiscale features '''
         super(GlobalHeightStage, self).__init__()
         self.cs = c1, c2, c3, c4
         self.out_scale = out_scale
         self.ghc_lst = nn.ModuleList([
-            GlobalHeightConv(c1, c1//out_scale),
-            GlobalHeightConv(c2, c2//out_scale),
-            GlobalHeightConv(c3, c3//out_scale),
-            GlobalHeightConv(c4, c4//out_scale),
+            GlobalHeightConv(c1, c1//out_scale, use_ring_conv),
+            GlobalHeightConv(c2, c2//out_scale, use_ring_conv),
+            GlobalHeightConv(c3, c3//out_scale, use_ring_conv),
+            GlobalHeightConv(c4, c4//out_scale, use_ring_conv),
         ])
 
     def forward(self, conv_list, out_w):
@@ -175,7 +182,7 @@ class HorizonNet(nn.Module):
     x_mean = torch.FloatTensor(np.array([0.485, 0.456, 0.406])[None, :, None, None])
     x_std = torch.FloatTensor(np.array([0.229, 0.224, 0.225])[None, :, None, None])
 
-    def __init__(self, backbone, use_rnn):
+    def __init__(self, backbone, use_rnn, use_ring_conv=False):
         super(HorizonNet, self).__init__()
         self.backbone = backbone
         self.use_rnn = use_rnn
@@ -198,7 +205,7 @@ class HorizonNet(nn.Module):
             c_last = (c1*8 + c2*4 + c3*2 + c4*1) // self.out_scale
 
         # Convert features from 4 blocks of the encoder into B x C x 1 x W'
-        self.reduce_height_module = GlobalHeightStage(c1, c2, c3, c4, self.out_scale)
+        self.reduce_height_module = GlobalHeightStage(c1, c2, c3, c4, use_ring_conv, self.out_scale)
 
         # 1D prediction
         if self.use_rnn:

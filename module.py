@@ -13,7 +13,7 @@ class HorizonModel(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         self.opt = opt
-        self.net = HorizonNet(self.opt.backbone, not self.opt.no_rnn)
+        self.net = HorizonNet(self.opt.backbone, not self.opt.no_rnn, self.opt.use_ring_conv)
 
         assert -1 <= self.opt.freeze_earlier_blocks and self.opt.freeze_earlier_blocks <= 4
         if self.opt.freeze_earlier_blocks != -1:

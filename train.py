@@ -50,6 +50,7 @@ if __name__ == '__main__':
     parser.add_argument('--beta1', default=0.9, type=float, help='momentum for sgd, beta1 for adam')
     parser.add_argument('--weight_decay', default=0, type=float, help='factor for L2 regularization')
     parser.add_argument('--bn_momentum', type=float)
+    parser.add_argument('--use_ring_conv', action='store_true', help='Enable ring convolution.')
     parser.add_argument('--name', default='HorizonNet', type=str)
 
     # testing
@@ -60,6 +61,9 @@ if __name__ == '__main__':
     if args.detect_anomaly:
         print("Enabling anomaly detection")
         torch.autograd.set_detect_anomaly(True)
+
+    if args.use_ring_conv:
+        print("Enable circular convolutions.")
     
     # windows safe
     if sys.platform in ["win32"]:
