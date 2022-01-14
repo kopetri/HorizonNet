@@ -99,7 +99,7 @@ if __name__ == '__main__':
         amp_level='O2' if use_gpu else None,
         min_epochs=args.min_epochs,
         max_epochs=args.max_epochs,
-        logger=pl.loggers.TensorBoardLogger("result", name=args.name),
+        logger=pl.loggers.WandbLogger(project="Layoutestimation", name=args.name),
         callbacks=callbacks
     )
 
