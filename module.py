@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from model import HorizonNet
 from inference import inference
 from eval_general import test_general
+from eval_cuboid import test
 import numpy as np
 from misc.utils import save_model
 from pathlib import Path
@@ -13,7 +14,7 @@ class HorizonModel(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters()
         self.opt = opt
-        self.net = HorizonNet(self.opt.backbone, not self.opt.no_rnn, self.opt.use_ring_conv)
+        self.net = HorizonNet(self.opt.backbone, not self.opt.no_rnn, self.opt.use_ring_conv if "use_ring_conv" in self.opt else False)
 
         assert -1 <= self.opt.freeze_earlier_blocks and self.opt.freeze_earlier_blocks <= 4
         if self.opt.freeze_earlier_blocks != -1:
@@ -94,6 +95,48 @@ class HorizonModel(pl.LightningModule):
         self.log("valid_delta_1", losses['delta_1'], prog_bar=True)
 
         return {'valid_2DIoU': losses['2DIoU'], 'valid_3DIoU': losses['3DIoU'], 'valid_rmse': losses['rmse'], 'valid_delta_1': losses['delta_1']}
+
+    def test_step(self, batch, batch_id):
+        x, _, _, gt_cor_id = batch
+        dt_cor_id, z0, z1, vis_out = inference(net=self.net, x=x, device=self.device, force_cuboid=True)
+
+        dt_cor_id[:, 0] *= 1024
+        dt_cor_id[:, 1] *= 512
+
+        losses = {
+            'CE': [],
+            'PE': [],
+            '3DIoU': [],
+        }
+
+        test(dt_cor_id, z0, z1, gt_cor_id.cpu().squeeze(0).numpy(), 1024, 512, losses)
+
+        self.log('cuboid_CE',    losses['CE'][0])
+        self.log('cuboid_PE',    losses['PE'][0])
+        self.log('cuboid_3DIoU', losses['3DIoU'][0])
+
+        dt_cor_id = inference(self.net, x, x.device, force_raw=True)[0]
+        dt_cor_id[:, 0] *= 1024
+        dt_cor_id[:, 1] *= 512
+
+        # True eval result instead of training objective
+        true_eval = dict([
+            (n_corner, {'2DIoU': [], '3DIoU': [], 'rmse': [], 'delta_1': []})
+            for n_corner in ['4', '6', '8', '10+', 'odd', 'overall']
+        ])
+
+        test_general(dt_cor_id, gt_cor_id, 1024, 512, true_eval)
+
+        losses['2DIoU'] = torch.FloatTensor([true_eval['overall']['2DIoU']])
+        losses['3DIoU'] = torch.FloatTensor([true_eval['overall']['3DIoU']])
+        losses['rmse'] = torch.FloatTensor([true_eval['overall']['rmse']])
+        losses['delta_1'] = torch.FloatTensor([true_eval['overall']['delta_1']])
+
+        self.log("general_2DIoU",   losses['2DIoU'],   prog_bar=True)
+        self.log("general_3DIoU",   losses['3DIoU'],   prog_bar=True)
+        self.log("general_rmse",    losses['rmse'],    prog_bar=True)
+        self.log("general_delta_1", losses['delta_1'], prog_bar=True)
+
 
     def configure_optimizers(self):
         def adjust_learning_rate(cur_iter):
